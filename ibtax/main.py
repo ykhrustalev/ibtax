@@ -113,9 +113,9 @@ def to_rows(currencies, take_profit):
     def walk():
         costs = dict(
             buy=0,
-            buy_exchanged=0,
+            buy_rub=0,
             fee=0,
-            fee_exchanged=0
+            fee_rub=0
         )
 
         for q_order in take_profit.buys:
@@ -123,57 +123,76 @@ def to_rows(currencies, take_profit):
 
             currency_rate = currencies[trade.currency][trade.datetime.date()]
 
-            buy_cost = trade.t_price * q_order.quantity
-            costs['buy'] += buy_cost
+            cost = trade.t_price * q_order.quantity
+            costs['buy'] += cost
 
-            buy_exchanged = currency_rate * q_order.quantity
-            costs['buy_exchanged'] += buy_exchanged
+            cost_rub = currency_rate * cost
+            costs['buy_rub'] += cost_rub
 
             costs['fee'] += trade.comm_fee
 
-            fee_exchanged = currency_rate * trade.comm_fee
-            costs['fee_exchanged'] += fee_exchanged
+            fee_rub = currency_rate * trade.comm_fee
+            costs['fee_rub'] += fee_rub
 
             yield [
+                # symbol
                 symbol,
+                # date
                 trade.datetime.strftime('%Y.%m.%d'),
+                # quantity
                 q_order.quantity,
+                # price
                 to_f(trade.t_price),
-                to_f(buy_cost),
+                # cost
+                to_f(cost),
+                # currency
                 trade.currency,
+                # currency rate
                 to_f(currency_rate),
-                to_f(buy_exchanged),
+                # cost in rub
+                to_f(cost_rub),
+                # fee
                 to_f(trade.comm_fee),
-                to_f(fee_exchanged),
-                ''
-
+                # fee in rub
+                to_f(fee_rub),
             ]
 
         trade = take_profit.sell
         currency_rate = currencies[trade.currency][trade.datetime.date()]
 
-        realized_pl_exchanged = currency_rate * trade.realized_pl
-
         costs['fee'] += trade.comm_fee
 
-        fee_exchanged = currency_rate * trade.comm_fee
-        costs['fee_exchanged'] += fee_exchanged
+        fee_rub = currency_rate * trade.comm_fee
+        costs['fee_rub'] += fee_rub
 
         yield [
+            # symbol
             symbol,
+            # date
             trade.datetime.strftime('%Y.%m.%d'),
+            # quantity
             trade.quantity,
+            # price
             to_f(trade.t_price),
+            # cost
             to_f(trade.t_price * trade.quantity),
+            # currency
             trade.currency,
+            # currency rate
             to_f(currency_rate),
-            to_f(currency_rate * trade.quantity),
+            # cost in rub
+            to_f(currency_rate * trade.t_price * trade.quantity),
+            # fee
             to_f(trade.comm_fee),
-            to_f(fee_exchanged),
+            # fee in rub
+            to_f(fee_rub),
+            # pl
             to_f(trade.realized_pl),
-            to_f(realized_pl_exchanged),
-            # tax base
-            to_f(realized_pl_exchanged - costs['buy_exchanged'] + costs['fee_exchanged']),
+            # pl in rub
+            to_f(currency_rate * trade.realized_pl),
+            # tax baseline in rub
+            to_f(-1 * trade.t_price * currency_rate * trade.quantity +
+                 -abs(costs['buy_rub']) - abs(costs['fee_rub'])),
         ]
 
     return list(walk())
@@ -224,22 +243,14 @@ def main(report_path):
 
     w = csv.writer(sys.stdout)
 
+    print('#' * 79)
+    print("# equity profits")
+    print('#' * 79)
     for symb in grouped:
         if symb.has_realised():
             for take_profit in take_profits(symb):
-                # print()
-                # print(symb.symbol)
-                # print([(x.quantity, x.trade) for x in take_profit.buys])
-                # print(take_profit.sell)
-
                 for row in to_rows(currencies_map, take_profit):
                     w.writerow(row)
-
-    #
-    # for trade in trades:
-    #     if trade.realized_pl and abs(float(trade.realized_pl)) > 0.001:
-    #         row = [fix(i) for i in trade]
-    #         w.writerow(row)
 
 
 if __name__ == '__main__':
