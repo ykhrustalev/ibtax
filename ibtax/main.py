@@ -3,7 +3,7 @@ import pathlib
 import sys
 from datetime import date
 
-from ibtax import equities, dividends
+from ibtax import equities, dividends, fees
 from ibtax.cache import PickleCache
 from ibtax.currencies import get_currencies_map
 
@@ -23,6 +23,12 @@ class Report:
             self.rows = [r for r in reader]
 
 
+def header(title):
+    print('#' * 79)
+    print("# {}".format(title))
+    print('#' * 79)
+
+
 def main():
     report_path = sys.argv[1]
 
@@ -34,12 +40,11 @@ def main():
 
     w = csv.writer(sys.stdout)
 
-    print('#' * 79)
-    print("# equity")
-    print('#' * 79)
+    header('equity')
     equities.show(w, currencies_map, report)
 
-    print('#' * 79)
-    print("# dividends")
-    print('#' * 79)
+    header('dividends')
     dividends.show(w, currencies_map, report)
+
+    header('fees')
+    fees.show(w, currencies_map, report)
