@@ -48,6 +48,12 @@ def to_f(v):
     return str(v).replace('.', ',')
 
 
+def to_f4(v):
+    if isinstance(v, float):
+        return '{:.4f}'.format(v).replace('.', ',')
+    return str(v).replace('.', ',')
+
+
 class Report:
     def __init__(self, path):
         path = pathlib.Path(path)
@@ -111,7 +117,7 @@ def to_rows(currencies, take_profit):
     symbol = take_profit.sell.symbol
 
     def walk():
-        costs = dict(
+        agg = dict(
             buy=0,
             buy_rub=0,
             fee=0,
@@ -123,16 +129,17 @@ def to_rows(currencies, take_profit):
 
             currency_rate = currencies[trade.currency][trade.datetime.date()]
 
-            cost = trade.t_price * q_order.quantity
-            costs['buy'] += cost
+            cost = abs(trade.t_price * q_order.quantity)
+            agg['buy'] += cost
 
             cost_rub = currency_rate * cost
-            costs['buy_rub'] += cost_rub
+            agg['buy_rub'] += cost_rub
 
-            costs['fee'] += trade.comm_fee
+            fee = abs(trade.comm_fee)
+            agg['fee'] += fee
 
-            fee_rub = currency_rate * trade.comm_fee
-            costs['fee_rub'] += fee_rub
+            fee_rub = currency_rate * fee
+            agg['fee_rub'] += fee_rub
 
             yield [
                 # symbol
@@ -142,57 +149,59 @@ def to_rows(currencies, take_profit):
                 # quantity
                 q_order.quantity,
                 # price
-                to_f(trade.t_price),
+                to_f4(trade.t_price),
                 # cost
-                to_f(cost),
+                to_f(-cost),
                 # currency
                 trade.currency,
                 # currency rate
                 to_f(currency_rate),
                 # cost in rub
-                to_f(cost_rub),
+                to_f(-cost_rub),
                 # fee
-                to_f(trade.comm_fee),
+                to_f(-fee),
                 # fee in rub
-                to_f(fee_rub),
+                to_f(-fee_rub),
             ]
 
         trade = take_profit.sell
         currency_rate = currencies[trade.currency][trade.datetime.date()]
 
-        costs['fee'] += trade.comm_fee
+        fee = abs(trade.comm_fee)
+        agg['fee'] += fee
 
-        fee_rub = currency_rate * trade.comm_fee
-        costs['fee_rub'] += fee_rub
+        fee_rub = currency_rate * fee
+        agg['fee_rub'] += fee_rub
 
+        cost = abs(trade.t_price * trade.quantity)
+        cost_rub = currency_rate * cost
         yield [
             # symbol
             symbol,
             # date
             trade.datetime.strftime('%Y.%m.%d'),
             # quantity
-            trade.quantity,
+            -abs(trade.quantity),
             # price
-            to_f(trade.t_price),
+            to_f4(trade.t_price),
             # cost
-            to_f(trade.t_price * trade.quantity),
+            to_f(cost),
             # currency
             trade.currency,
             # currency rate
             to_f(currency_rate),
             # cost in rub
-            to_f(currency_rate * trade.t_price * trade.quantity),
+            to_f(cost_rub),
             # fee
-            to_f(trade.comm_fee),
+            to_f(-fee),
             # fee in rub
-            to_f(fee_rub),
+            to_f(-fee_rub),
             # pl
             to_f(trade.realized_pl),
             # pl in rub
-            to_f(currency_rate * trade.realized_pl),
+            to_f(cost_rub - agg['buy_rub']),
             # tax baseline in rub
-            to_f(-1 * trade.t_price * currency_rate * trade.quantity +
-                 -abs(costs['buy_rub']) - abs(costs['fee_rub'])),
+            to_f(cost_rub - agg['buy_rub'] - agg['fee_rub']),
         ]
 
     return list(walk())
