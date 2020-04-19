@@ -3,7 +3,7 @@ import pathlib
 import sys
 from datetime import date
 
-from ibtax import equities, dividends, fees
+from ibtax import equities, dividends, fees, interest
 from ibtax.cache import PickleCache
 from ibtax.currencies import get_currencies_map
 
@@ -12,7 +12,7 @@ RQ_CAD = 'R01350'
 
 CURRENCIES = dict(USD=RQ_USD, CAD=RQ_CAD)
 
-START, END = date(2017, 12, 10), date(2018, 12, 31)
+START, END = date(2017, 12, 10), date(2019, 12, 31)
 
 
 class Report:
@@ -48,3 +48,6 @@ def main():
 
     header('fees')
     fees.show(w, currencies_map, report)
+
+    header('interest')
+    interest.show(w, currencies_map, report)
