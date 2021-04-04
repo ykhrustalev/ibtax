@@ -27,7 +27,9 @@ class Interest(namedtuple('Interest', [
                 if (
                     row[0].lower() in ('interest', 'процент') and
                     row[1].lower() == 'data' and
-                    row[2].lower() not in ('total', 'всего')
+                    row[2].lower() not in ('total', 'всего') and
+                    'total interest in usd' not in row[2].lower() and
+                    'total in usd' not in row[2].lower()
                 ):
                     yield cls(*row)
 
@@ -35,7 +37,10 @@ class Interest(namedtuple('Interest', [
 
 
 def to_row(currencies_map, fee):
-    currency_rate = currencies_map[fee.currency][fee.datetime.date()]
+    if fee.currency == 'RUB':
+        currency_rate = 1
+    else:
+        currency_rate = currencies_map[fee.currency][fee.datetime.date()]
 
     amount_rub = currency_rate * fee.amount
 
