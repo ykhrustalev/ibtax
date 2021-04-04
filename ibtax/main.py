@@ -30,16 +30,20 @@ class Report:
     @staticmethod
     def _parse_year(rows):
         # Statement,Data,Period,"January 1, 2020 - December 31, 2020"
-        for row in rows:
-            if row[0].lower() == 'statement' and row[2].lower() == 'period':
-                val = row[3]
-                m = re.match(r'.+(\d\d\d\d).+(\d\d\d\d)', val)
-                if not m:
-                    raise ValueError("can't find a report period year")
-                y1, y2 = m.group(1), m.group(2)
-                if y1 != y2:
-                    raise ValueError("can't find a report period year")
-                return y1
+        def walk():
+            for row in rows:
+                if row[0].lower() == 'statement' and row[2].lower() == 'period':
+                    val = row[3]
+                    m = re.match(r'.+(\d\d\d\d).+(\d\d\d\d)', val)
+                    if not m:
+                        raise ValueError("can't find a report period year")
+                    y1, y2 = m.group(1), m.group(2)
+                    if y1 != y2:
+                        raise ValueError("can't find a report period year")
+                    yield y1
+
+        # take the last one, report could be a merged set of reports
+        return sorted(walk())[-1]
 
 
 def header(title):
