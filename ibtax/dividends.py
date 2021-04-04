@@ -1,8 +1,11 @@
+import logging
 import re
 from collections import namedtuple
 from datetime import datetime
 
 from ibtax.utils import to_f
+
+logger = logging.getLogger(__name__)
 
 
 def parse_symbol(value):
@@ -41,7 +44,8 @@ class Payout(namedtuple('Payout', [
                 if (
                     row[0].lower() == 'dividends' and
                     row[1].lower() == 'data' and
-                    row[2].lower() != 'total'
+                    row[2].lower() != 'total' and
+                    report.year in row[3].lower()
                 ):
                     yield cls(*row)
 
@@ -75,7 +79,8 @@ class Withhold(namedtuple('Withhold', [
                 if (
                     row[0].lower() == 'withholding tax' and
                     row[1].lower() == 'data' and
-                    row[2].lower() != 'total'
+                    row[2].lower() != 'total' and
+                    report.year in row[3].lower()
                 ):
                     yield cls(*row)
 
@@ -86,8 +91,26 @@ Event = namedtuple('Event', ['payout', 'withhold'])
 
 
 def get_events(report):
-    return [Event(*x) for x in zip(Payout.parse(report),
-                                   Withhold.parse(report))]
+    payouts = Payout.parse(report)
+    withholds = Withhold.parse(report)
+
+    def walk():
+        for p in payouts:
+            w = None
+
+            while withholds:
+                w = withholds.pop(0)
+                if p.symbol == w.symbol:
+                    # drop those that are not matching
+                    break
+                logger.warning('skipping %s', w)
+
+            if w is None:
+                raise ValueError("can't match withhold for {}".format(p))
+
+            yield Event(p, w)
+
+    return list(walk())
 
 
 def to_row(currencies_map, event):
