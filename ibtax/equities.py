@@ -1,7 +1,10 @@
+import logging
 from collections import namedtuple, defaultdict
 from datetime import datetime
 
 from ibtax.utils import to_f4, to_f
+
+logger = logging.getLogger(__name__)
 
 
 class Trade(namedtuple('Trade', [
@@ -11,7 +14,12 @@ class Trade(namedtuple('Trade', [
 ])):
     @property
     def quantity(self):
-        return int(self.raw_quantity)
+        # splits may contain non integer values
+        try:
+            return int(self.raw_quantity)
+        except ValueError:
+            logger.warning("unexpected quantity in a trade %s", self)
+            return int(float(self.raw_quantity))
 
     @property
     def realized_pl(self):
@@ -84,6 +92,10 @@ class TakeProfit:
     def __init__(self, buys, sell):
         self.buys = buys
         self.sell = sell
+
+    @property
+    def year(self):
+        return str(self.sell.datetime.year)
 
 
 def to_rows(currencies, take_profit):
@@ -189,7 +201,7 @@ def take_profits(symb):
 
             buys = []
 
-            while True:
+            while buy_trades:
                 buy = buy_trades.pop(0)
 
                 if buy.quantity == quantity:
@@ -213,7 +225,12 @@ def take_profits(symb):
 def show(w, currencies_map, report):
     grouped = group_trades(Trade.parse(report))
     for symb in grouped:
-        if symb.has_realised():
-            for take_profit in take_profits(symb):
-                for row in to_rows(currencies_map, take_profit):
-                    w.writerow(row)
+        if not symb.has_realised():
+            continue
+
+        for take_profit in take_profits(symb):
+            if take_profit.year != report.year:
+                continue
+
+            for row in to_rows(currencies_map, take_profit):
+                w.writerow(row)
