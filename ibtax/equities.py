@@ -38,6 +38,8 @@ class Trade(namedtuple('Trade', [
         def walk():
             for row in report.rows:
                 if row[0].lower() == 'trades' and row[1].lower() == 'data':
+                    if row[5] == "USHY":
+                        continue
                     yield cls(*row)
 
         return list(walk())
@@ -189,7 +191,7 @@ def take_profits(symb):
 
             buys = []
 
-            while True:
+            while buy_trades:
                 buy = buy_trades.pop(0)
 
                 if buy.quantity == quantity:
