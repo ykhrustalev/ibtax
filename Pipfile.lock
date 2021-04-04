@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a166821031f60007a08b6fec9ba3caa9dc601786a8eb3ed72bbd9342668d2b3d"
+            "sha256": "a32871caaea663dd22e7bdfe099907e1ce2cdad4705903c1c68a7e09d90fcc52"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3.6"
+            "python_version": "3.8"
         },
         "sources": [
             {
@@ -16,7 +16,11 @@
         ]
     },
     "default": {
-        "e1839a8": {
+        "ibtab": {
+            "editable": true,
+            "path": "."
+        },
+        "ibtax": {
             "editable": true,
             "path": "."
         }
