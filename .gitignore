@@ -4,3 +4,4 @@
 *.egg-info
 *.csv
 .pdm.toml
+__pypackages__/
