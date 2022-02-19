@@ -1,26 +1,32 @@
 import urllib.parse
 import urllib.request
-from collections import namedtuple
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta, date
+from typing import Iterable
 from xml.dom import minidom
+
+# https://www.cbr.ru/scripts/XML_val.asp?d=0
+RQ_USD = 'R01235'
+RQ_CAD = 'R01350'
+
+CURRENCIES = dict(USD=RQ_USD, CAD=RQ_CAD)
 
 
 def to_cb_date_format(dt):
     return dt.strftime("%d/%m/%Y")
 
 
-CurrencyCourse = namedtuple('CurrencyCourse', ['date', 'value'])
+@dataclass
+class CurrencyRatio:
+    day: date
+    value: float
 
 
 def load_currency(rq, start, end):
     start = to_cb_date_format(start)
     end = to_cb_date_format(end)
 
-    url = 'http://www.cbr.ru/scripts/XML_dynamic.asp?date_req1={start}&date_req2={end}&VAL_NM_RQ={rq}'.format(
-        start=start,
-        end=end,
-        rq=rq,
-    )
+    url = f'https://www.cbr.ru/scripts/XML_dynamic.asp?date_req1={start}&date_req2={end}&VAL_NM_RQ={rq}'
     f = urllib.request.urlopen(url)
     contents = f.read().decode('utf-8')
 
@@ -34,7 +40,7 @@ def load_currency(rq, start, end):
 
             date_str = node.attributes['Date'].value
             d = datetime.strptime(date_str, "%d.%m.%Y").date()
-            yield CurrencyCourse(d, value)
+            yield CurrencyRatio(d, value)
 
     return list(walk())
 
@@ -46,13 +52,13 @@ def fill_gaps(seq):
         yield seq[0]
 
         for cur in seq[1:]:
-            prev_date = mem['cur'].date
+            prev_date = mem['cur'].day
             prev_value = mem['cur'].value
 
-            diff = (cur.date - prev_date).days
+            diff = (cur.day - prev_date).days
             for i in range(1, diff):
-                yield CurrencyCourse(prev_date + timedelta(days=i),
-                                     prev_value)
+                yield CurrencyRatio(prev_date + timedelta(days=i),
+                                    prev_value)
 
             yield cur
             mem['cur'] = cur
@@ -61,7 +67,7 @@ def fill_gaps(seq):
 
 
 def prepare_currency(cache, rq, start, end):
-    key_name = '.{}.pickle'.format(rq)
+    key_name = f'.{rq}.{start}-{end}.pickle'
 
     cached = cache.get(key_name)
     if cached:
@@ -75,11 +81,25 @@ def prepare_currency(cache, rq, start, end):
     return seq
 
 
-def get_currencies_map(cache, cur_map, start, end):
-    res = {}
+class CurrencyMap:
+    def __init__(self, self_cur):
+        self.__map = {}
+        self.__self_cur = self_cur
 
-    for name, rq in cur_map.items():
-        seq = prepare_currency(cache, rq, start, end)
-        res[name] = {d: v for d, v in seq}
+    def add(self, cur: str, seq: Iterable[CurrencyRatio]):
+        self.__map[cur] = {x.day: x.value for x in seq}
 
-    return res
+    def get(self, cur: str, day: date) -> float:
+        if cur == self.__self_cur:
+            return 1.0
+        return self.__map[cur][day]
+
+    @classmethod
+    def build(cls, cache, start, end) -> "CurrencyMap":
+        m = cls("RUB")
+
+        for name, rq in CURRENCIES.items():
+            seq = prepare_currency(cache, rq, start, end)
+            m.add(name, seq)
+
+        return m

@@ -5,22 +5,27 @@
 1. Get pipenv
     ```shell
     pip3 install pipx
-    pipx install pipenv 
+    pipx install pdm 
     ```
 2. Setup dependencies
     ```shell
-    pipenv install
+    pdm install
     ``` 
 
 ## Use
 
 1. Merge reports
     ```shell
-    cat inputs/2018.csv ... inputs/2020.csv >> inputs/report.csv  
+    (cd inputs && cat \
+      2018.csv \
+      2019.csv \
+      2020.csv \
+      2021.csv \
+    > report.csv)
     ```
 2. Generate one
     ```shell
-    pipenv run ibtaxctl --year-report inputs/report.csv
+    pdm run ibtax --year-report inputs/report.csv
     ```
    Note, it will use the latest year available in the report(s)
 

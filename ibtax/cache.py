@@ -3,9 +3,7 @@ import pickle
 
 
 class PickleCache:
-    def __init__(self, path=None):
-        if not path:
-            path = pathlib.Path(__file__).parent
+    def __init__(self, path: pathlib.Path):
         self.path = path
 
     def _path(self, key):

@@ -1,21 +1,16 @@
+import argparse
 import csv
 import logging
 import pathlib
 import re
 import sys
 from datetime import date
-import argparse
 
-from ibtax import equities, dividends, fees, interest
+from ibtax import equities, dividends, fees, interest, lends
 from ibtax.cache import PickleCache
-from ibtax.currencies import get_currencies_map
+from ibtax.currencies import CurrencyMap
 
-RQ_USD = 'R01235'
-RQ_CAD = 'R01350'
-
-CURRENCIES = dict(USD=RQ_USD, CAD=RQ_CAD)
-
-START, END = date(2017, 12, 10), date(2020, 12, 31)
+cache_dir = pathlib.Path(__file__).parent.parent
 
 
 class Report:
@@ -25,10 +20,18 @@ class Report:
             reader = csv.reader(f)
             self.rows = [r for r in reader]
 
-        self.year = self._parse_year(self.rows)
+        self.years = self._parse_years(self.rows)
+        # take the last one, report could be a merged set of reports
+        self.year = sorted(self.years)[-1]
+
+    @property
+    def period(self) -> (date, date):
+        start_year = self.years[0]
+        end_year = self.years[-1]
+        return date(int(start_year), 1, 1), date(int(end_year), 12, 31)
 
     @staticmethod
-    def _parse_year(rows):
+    def _parse_years(rows):
         # Statement,Data,Period,"January 1, 2020 - December 31, 2020"
         def walk():
             for row in rows:
@@ -42,8 +45,7 @@ class Report:
                         raise ValueError("can't find a report period year")
                     yield y1
 
-        # take the last one, report could be a merged set of reports
-        return sorted(walk())[-1]
+        return sorted(walk())
 
 
 def header(title):
@@ -64,11 +66,12 @@ def main():
 
     args = parse_args()
 
-    cache = PickleCache()
-
-    currencies_map = get_currencies_map(cache, CURRENCIES, START, END)
-
     report = Report(args.year_report)
+    period_start, period_end = report.period
+
+    cache = PickleCache(cache_dir)
+
+    currencies_map = CurrencyMap.build(cache, period_start, period_end)
 
     w = csv.writer(sys.stdout)
 
@@ -83,3 +86,6 @@ def main():
 
     header('interest')
     interest.show(w, currencies_map, report)
+
+    header('lend interest')
+    lends.show(w, currencies_map, report)

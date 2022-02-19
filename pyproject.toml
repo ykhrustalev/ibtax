@@ -1,0 +1,35 @@
+[project]
+name = "ibtax"
+version = ""
+description = ""
+authors = [
+    {name = "Yuri Khrustalev", email = "yuri.khrustalev@gmail.com"},
+]
+requires-python = ">=3.8"
+license = {text = "MIT"}
+
+[project.urls]
+homepage = "https://github.com/ykhrustalev/ibtax"
+
+[project.scripts]
+ibtax = "ibtax.main:main"
+
+
+[project.optional-dependencies]
+[tool]
+[tool.pdm]
+
+[[tool.pdm.source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "black",
+]
+
+[build-system]
+requires = ["pdm-pep517"]
+build-backend = "pdm.pep517.api"
+

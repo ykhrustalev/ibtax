@@ -1,6 +1,7 @@
 from collections import namedtuple
 from datetime import datetime
 
+from ibtax.currencies import CurrencyMap
 from ibtax.utils import to_f
 
 
@@ -28,15 +29,15 @@ class Fee(namedtuple('Fee', [
                 if (
                     row[0].lower() == 'fees' and
                     row[1].lower() == 'data' and
-                    row[2].lower() != 'total'
+                    'total' not in row[2].lower()
                 ):
                     yield cls(*row)
 
         return list(walk())
 
 
-def to_row(currencies_map, fee):
-    currency_rate = currencies_map[fee.currency][fee.datetime.date()]
+def to_row(currencies_map: CurrencyMap, fee):
+    currency_rate = currencies_map.get(fee.currency, fee.datetime.date())
 
     return [
         # date

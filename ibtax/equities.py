@@ -2,6 +2,7 @@ import logging
 from collections import namedtuple, defaultdict
 from datetime import datetime
 
+from ibtax.currencies import CurrencyMap
 from ibtax.utils import to_f4, to_f
 
 logger = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ class TakeProfit:
         return str(self.sell.datetime.year)
 
 
-def to_rows(currencies, take_profit):
+def to_rows(currencies: CurrencyMap, take_profit):
     symbol = take_profit.sell.symbol
 
     def walk():
@@ -112,7 +113,7 @@ def to_rows(currencies, take_profit):
         for q_order in take_profit.buys:
             trade = q_order.trade
 
-            currency_rate = currencies[trade.currency][trade.datetime.date()]
+            currency_rate = currencies.get(trade.currency, trade.datetime.date())
 
             cost = abs(trade.t_price * q_order.quantity)
             agg['buy'] += cost
@@ -150,7 +151,7 @@ def to_rows(currencies, take_profit):
             ]
 
         trade = take_profit.sell
-        currency_rate = currencies[trade.currency][trade.datetime.date()]
+        currency_rate = currencies.get(trade.currency, trade.datetime.date())
 
         fee = abs(trade.comm_fee)
         agg['fee'] += fee

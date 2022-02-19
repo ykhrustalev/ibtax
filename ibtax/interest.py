@@ -1,6 +1,7 @@
 from collections import namedtuple
 from datetime import datetime
 
+from ibtax.currencies import CurrencyMap
 from ibtax.utils import to_f
 
 
@@ -36,11 +37,11 @@ class Interest(namedtuple('Interest', [
         return list(walk())
 
 
-def to_row(currencies_map, fee):
+def to_row(currencies_map: CurrencyMap, fee):
     if fee.currency == 'RUB':
         currency_rate = 1
     else:
-        currency_rate = currencies_map[fee.currency][fee.datetime.date()]
+        currency_rate = currencies_map.get(fee.currency, fee.datetime.date())
 
     amount_rub = currency_rate * fee.amount
 

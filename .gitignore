@@ -3,3 +3,4 @@
 *.pickle
 *.egg-info
 *.csv
+.pdm.toml
