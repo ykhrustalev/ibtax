@@ -3,7 +3,7 @@ from collections import namedtuple, defaultdict
 from datetime import datetime
 
 from ibtax.currencies import CurrencyMap
-from ibtax.utils import to_f4, to_f
+from ibtax.formatting import to_f4, to_f
 
 logger = logging.getLogger(__name__)
 

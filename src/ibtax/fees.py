@@ -2,7 +2,7 @@ from collections import namedtuple
 from datetime import datetime
 
 from ibtax.currencies import CurrencyMap
-from ibtax.utils import to_f
+from ibtax.formatting import to_f
 
 
 class Fee(
