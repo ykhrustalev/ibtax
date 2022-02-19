@@ -8,11 +8,29 @@ from ibtax.utils import to_f4, to_f
 logger = logging.getLogger(__name__)
 
 
-class Trade(namedtuple('Trade', [
-    'type', 'header', 'data_discriminator', 'asset_category', 'raw_currency',
-    'symbol', 'raw_datetime', 'raw_quantity', 'raw_t_price', 'c_price', 'proceeds',
-    'raw_comm_fee', 'basis', 'raw_realized_pl', 'mtm_pl', 'code'
-])):
+class Trade(
+    namedtuple(
+        "Trade",
+        [
+            "type",
+            "header",
+            "data_discriminator",
+            "asset_category",
+            "raw_currency",
+            "symbol",
+            "raw_datetime",
+            "raw_quantity",
+            "raw_t_price",
+            "c_price",
+            "proceeds",
+            "raw_comm_fee",
+            "basis",
+            "raw_realized_pl",
+            "mtm_pl",
+            "code",
+        ],
+    )
+):
     @property
     def quantity(self):
         # splits may contain non integer values
@@ -28,7 +46,7 @@ class Trade(namedtuple('Trade', [
 
     @property
     def datetime(self):
-        return datetime.strptime(self.raw_datetime, '%Y-%m-%d, %H:%M:%S')
+        return datetime.strptime(self.raw_datetime, "%Y-%m-%d, %H:%M:%S")
 
     @property
     def currency(self):
@@ -46,7 +64,7 @@ class Trade(namedtuple('Trade', [
     def parse(cls, report):
         def walk():
             for row in report.rows:
-                if row[0].lower() == 'trades' and row[1].lower() == 'data':
+                if row[0].lower() == "trades" and row[1].lower() == "data":
                     yield cls(*row)
 
         return list(walk())
@@ -58,7 +76,7 @@ class SymbolTrades:
         self.trades = trades
 
     def __repr__(self):
-        return '{}'.format(self.symbol)
+        return "{}".format(self.symbol)
 
     def has_realised(self):
         for trade in self.trades:
@@ -79,8 +97,9 @@ def group_trades(trades):
     for trade in trades:
         res[trade.symbol].append(trade)
 
-    return [SymbolTrades(symbol, trades)
-            for symbol, trades in sorted(res.items())]
+    return [
+        SymbolTrades(symbol, trades) for symbol, trades in sorted(res.items())
+    ]
 
 
 class QuantityOrder:
@@ -103,35 +122,32 @@ def to_rows(currencies: CurrencyMap, take_profit):
     symbol = take_profit.sell.symbol
 
     def walk():
-        agg = dict(
-            buy=0,
-            buy_rub=0,
-            fee=0,
-            fee_rub=0
-        )
+        agg = dict(buy=0, buy_rub=0, fee=0, fee_rub=0)
 
         for q_order in take_profit.buys:
             trade = q_order.trade
 
-            currency_rate = currencies.get(trade.currency, trade.datetime.date())
+            currency_rate = currencies.get(
+                trade.currency, trade.datetime.date()
+            )
 
             cost = abs(trade.t_price * q_order.quantity)
-            agg['buy'] += cost
+            agg["buy"] += cost
 
             cost_rub = currency_rate * cost
-            agg['buy_rub'] += cost_rub
+            agg["buy_rub"] += cost_rub
 
             fee = abs(trade.comm_fee)
-            agg['fee'] += fee
+            agg["fee"] += fee
 
             fee_rub = currency_rate * fee
-            agg['fee_rub'] += fee_rub
+            agg["fee_rub"] += fee_rub
 
             yield [
                 # symbol
                 symbol,
                 # date
-                trade.datetime.strftime('%Y.%m.%d'),
+                trade.datetime.strftime("%Y.%m.%d"),
                 # quantity
                 q_order.quantity,
                 # price
@@ -154,10 +170,10 @@ def to_rows(currencies: CurrencyMap, take_profit):
         currency_rate = currencies.get(trade.currency, trade.datetime.date())
 
         fee = abs(trade.comm_fee)
-        agg['fee'] += fee
+        agg["fee"] += fee
 
         fee_rub = currency_rate * fee
-        agg['fee_rub'] += fee_rub
+        agg["fee_rub"] += fee_rub
 
         cost = abs(trade.t_price * trade.quantity)
         cost_rub = currency_rate * cost
@@ -165,7 +181,7 @@ def to_rows(currencies: CurrencyMap, take_profit):
             # symbol
             symbol,
             # date
-            trade.datetime.strftime('%Y.%m.%d'),
+            trade.datetime.strftime("%Y.%m.%d"),
             # quantity
             -abs(trade.quantity),
             # price
@@ -185,9 +201,9 @@ def to_rows(currencies: CurrencyMap, take_profit):
             # pl
             to_f(trade.realized_pl),
             # pl in rub
-            to_f(cost_rub - agg['buy_rub']),
+            to_f(cost_rub - agg["buy_rub"]),
             # tax baseline in rub
-            to_f(cost_rub - agg['buy_rub'] - agg['fee_rub']),
+            to_f(cost_rub - agg["buy_rub"] - agg["fee_rub"]),
         ]
 
     return list(walk())

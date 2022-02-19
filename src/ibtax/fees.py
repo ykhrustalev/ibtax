@@ -5,18 +5,27 @@ from ibtax.currencies import CurrencyMap
 from ibtax.utils import to_f
 
 
-class Fee(namedtuple('Fee', [
-    'fees', 'header', 'subtitle', 'raw_currency', 'raw_date', 'description',
-    'raw_amount',
-])):
-
+class Fee(
+    namedtuple(
+        "Fee",
+        [
+            "fees",
+            "header",
+            "subtitle",
+            "raw_currency",
+            "raw_date",
+            "description",
+            "raw_amount",
+        ],
+    )
+):
     @property
     def currency(self):
         return self.raw_currency.upper()
 
     @property
     def datetime(self):
-        return datetime.strptime(self.raw_date, '%Y-%m-%d')
+        return datetime.strptime(self.raw_date, "%Y-%m-%d")
 
     @property
     def amount(self):
@@ -27,9 +36,9 @@ class Fee(namedtuple('Fee', [
         def walk():
             for row in report.rows:
                 if (
-                    row[0].lower() == 'fees' and
-                    row[1].lower() == 'data' and
-                    'total' not in row[2].lower()
+                    row[0].lower() == "fees"
+                    and row[1].lower() == "data"
+                    and "total" not in row[2].lower()
                 ):
                     yield cls(*row)
 
@@ -41,7 +50,7 @@ def to_row(currencies_map: CurrencyMap, fee):
 
     return [
         # date
-        fee.datetime.strftime('%Y.%m.%d'),
+        fee.datetime.strftime("%Y.%m.%d"),
         # description
         fee.description,
         # amount usd

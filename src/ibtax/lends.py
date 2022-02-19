@@ -27,7 +27,7 @@ class LendInterest:
 
     @property
     def datetime(self):
-        return datetime.strptime(self.raw_start_date, '%Y-%m-%d')
+        return datetime.strptime(self.raw_start_date, "%Y-%m-%d")
 
     @property
     def quantity(self):
@@ -42,10 +42,10 @@ class LendInterest:
         def walk():
             for row in report.rows:
                 if (
-                    'ibkr managed securities lent interest details'
-                    ' (stock yield enhancement program)' in row[0].lower() and
-                    row[1].lower() == 'data' and
-                    'total' not in row[2].lower()
+                    "ibkr managed securities lent interest details"
+                    " (stock yield enhancement program)" in row[0].lower()
+                    and row[1].lower() == "data"
+                    and "total" not in row[2].lower()
                 ):
                     yield cls(*row)
 
@@ -59,7 +59,7 @@ def to_row(currencies_map: CurrencyMap, item):
 
     return [
         # date
-        item.datetime.strftime('%Y.%m.%d'),
+        item.datetime.strftime("%Y.%m.%d"),
         # symbol
         item.symbol,
         # amount usd
@@ -71,7 +71,7 @@ def to_row(currencies_map: CurrencyMap, item):
         # amount rub
         to_f(amount_rub),
         # tax to pay rub
-        to_f(max(0, 0.13 * amount_rub))
+        to_f(max(0, 0.13 * amount_rub)),
     ]
 
 

@@ -11,25 +11,30 @@ logger = logging.getLogger(__name__)
 
 
 def parse_symbol(value):
-    # FNCL (US3160925018) Cash Dividend 0.19100000 USD per Share (Ordinary Dividend)
-    return re.match(
-        r'^(?P<symbol>\w+)\s*\(.*',
-        value
-    ).group('symbol')
+    # FNCL (US3160925018) Cash Dividend 0.19100000 USD per Share (Ordinary Dividend)  # noqa
+    return re.match(r"^(?P<symbol>\w+)\s*\(.*", value).group("symbol")
 
 
-class Payout(namedtuple('Payout', [
-    'dividends', 'header', 'raw_currency', 'raw_date', 'description',
-    'raw_amount'
-])):
-
+class Payout(
+    namedtuple(
+        "Payout",
+        [
+            "dividends",
+            "header",
+            "raw_currency",
+            "raw_date",
+            "description",
+            "raw_amount",
+        ],
+    )
+):
     @property
     def currency(self):
         return self.raw_currency.upper()
 
     @property
     def datetime(self):
-        return datetime.strptime(self.raw_date, '%Y-%m-%d')
+        return datetime.strptime(self.raw_date, "%Y-%m-%d")
 
     @property
     def amount(self):
@@ -44,10 +49,10 @@ class Payout(namedtuple('Payout', [
         def walk():
             for row in report.rows:
                 if (
-                    row[0].lower() == 'dividends' and
-                    row[1].lower() == 'data' and
-                    'total' not in row[2].lower() and
-                    report.year in row[3].lower()
+                    row[0].lower() == "dividends"
+                    and row[1].lower() == "data"
+                    and "total" not in row[2].lower()
+                    and report.year in row[3].lower()
                 ):
                     yield cls(*row)
 
@@ -82,7 +87,7 @@ class Withhold:
 
     @property
     def datetime(self):
-        return datetime.strptime(self.raw_date, '%Y-%m-%d')
+        return datetime.strptime(self.raw_date, "%Y-%m-%d")
 
     @property
     def amount(self):
@@ -97,17 +102,20 @@ class Withhold:
         def walk():
             for row in report.rows:
                 if (
-                    row[0].lower() == 'withholding tax' and
-                    row[1].lower() == 'data' and
-                    'total' not in row[2].lower() and
-                    report.year in row[3].lower()
+                    row[0].lower() == "withholding tax"
+                    and row[1].lower() == "data"
+                    and "total" not in row[2].lower()
+                    and report.year in row[3].lower()
                 ):
                     yield cls(*row)
 
         return list(walk())
 
 
-Event = namedtuple('Event', ['payout', 'withhold'])
+@dataclass
+class Event:
+    payout: Payout
+    withhold: Withhold
 
 
 def get_events(report):
@@ -123,7 +131,7 @@ def get_events(report):
                 if p.symbol == w.symbol:
                     # drop those that are not matching
                     break
-                logger.warning('skipping %s', w)
+                logger.warning("skipping %s", w)
 
             if w is None:
                 logger.warning(f"can't match withhold for {p}")
@@ -147,7 +155,7 @@ def to_row(currencies_map: CurrencyMap, event):
         # symb
         p.symbol,
         # date
-        p.datetime.strftime('%Y.%m.%d'),
+        p.datetime.strftime("%Y.%m.%d"),
         # amount usd
         to_f(p.amount),
         # currency
@@ -161,7 +169,7 @@ def to_row(currencies_map: CurrencyMap, event):
         # tax payed rub
         to_f(tax_paid_rub),
         # tax to pay rub
-        to_f(max(0, 0.13 * amount_rub - tax_paid_rub))
+        to_f(max(0, 0.13 * amount_rub - tax_paid_rub)),
     ]
 
 

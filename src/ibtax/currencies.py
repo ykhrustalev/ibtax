@@ -6,8 +6,8 @@ from typing import Iterable
 from xml.dom import minidom
 
 # https://www.cbr.ru/scripts/XML_val.asp?d=0
-RQ_USD = 'R01235'
-RQ_CAD = 'R01350'
+RQ_USD = "R01235"
+RQ_CAD = "R01350"
 
 CURRENCIES = dict(USD=RQ_USD, CAD=RQ_CAD)
 
@@ -26,9 +26,12 @@ def load_currency(rq, start, end):
     start = to_cb_date_format(start)
     end = to_cb_date_format(end)
 
-    url = f'https://www.cbr.ru/scripts/XML_dynamic.asp?date_req1={start}&date_req2={end}&VAL_NM_RQ={rq}'
+    url = (
+        f"https://www.cbr.ru/scripts/XML_dynamic.asp"
+        f"?date_req1={start}&date_req2={end}&VAL_NM_RQ={rq}"
+    )
     f = urllib.request.urlopen(url)
-    contents = f.read().decode('utf-8')
+    contents = f.read().decode("utf-8")
 
     dom = minidom.parseString(contents)
     root = dom.getElementsByTagName("ValCurs")[0]
@@ -36,9 +39,9 @@ def load_currency(rq, start, end):
     def walk():
         for node in root.getElementsByTagName("Record"):
             value = node.getElementsByTagName("Value")[0].firstChild.nodeValue
-            value = float(value.replace(',', '.'))
+            value = float(value.replace(",", "."))
 
-            date_str = node.attributes['Date'].value
+            date_str = node.attributes["Date"].value
             d = datetime.strptime(date_str, "%d.%m.%Y").date()
             yield CurrencyRatio(d, value)
 
@@ -52,22 +55,21 @@ def fill_gaps(seq):
         yield seq[0]
 
         for cur in seq[1:]:
-            prev_date = mem['cur'].day
-            prev_value = mem['cur'].value
+            prev_date = mem["cur"].day
+            prev_value = mem["cur"].value
 
             diff = (cur.day - prev_date).days
             for i in range(1, diff):
-                yield CurrencyRatio(prev_date + timedelta(days=i),
-                                    prev_value)
+                yield CurrencyRatio(prev_date + timedelta(days=i), prev_value)
 
             yield cur
-            mem['cur'] = cur
+            mem["cur"] = cur
 
     return list(walk())
 
 
 def prepare_currency(cache, rq, start, end):
-    key_name = f'.{rq}.{start}-{end}.pickle'
+    key_name = f".{rq}.{start}-{end}.pickle"
 
     cached = cache.get(key_name)
     if cached:

@@ -10,7 +10,7 @@ from ibtax import equities, dividends, fees, interest, lends
 from ibtax.cache import PickleCache
 from ibtax.currencies import CurrencyMap
 
-cache_dir = pathlib.Path(__file__).parent.parent
+cache_dir = pathlib.Path(__file__).parent.parent.parent
 
 
 class Report:
@@ -35,9 +35,12 @@ class Report:
         # Statement,Data,Period,"January 1, 2020 - December 31, 2020"
         def walk():
             for row in rows:
-                if row[0].lower() == 'statement' and row[2].lower() == 'period':
+                if (
+                    row[0].lower() == "statement"
+                    and row[2].lower() == "period"
+                ):
                     val = row[3]
-                    m = re.match(r'.+(\d\d\d\d).+(\d\d\d\d)', val)
+                    m = re.match(r".+(\d\d\d\d).+(\d\d\d\d)", val)
                     if not m:
                         raise ValueError("can't find a report period year")
                     y1, y2 = m.group(1), m.group(2)
@@ -49,14 +52,14 @@ class Report:
 
 
 def header(title):
-    print('#' * 79)
+    print("#" * 79)
     print("# {}".format(title))
-    print('#' * 79)
+    print("#" * 79)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--year-report', help='year report')
+    parser.add_argument("--year-report", help="year report")
     args = parser.parse_args()
     return args
 
@@ -75,17 +78,17 @@ def main():
 
     w = csv.writer(sys.stdout)
 
-    header('equity')
+    header("equity")
     equities.show(w, currencies_map, report)
 
-    header('dividends')
+    header("dividends")
     dividends.show(w, currencies_map, report)
 
-    header('fees')
+    header("fees")
     fees.show(w, currencies_map, report)
 
-    header('interest')
+    header("interest")
     interest.show(w, currencies_map, report)
 
-    header('lend interest')
+    header("lend interest")
     lends.show(w, currencies_map, report)
